@@ -16,6 +16,7 @@
   firebase.initializeApp(config);
 </script>
 <script>
+  var darkness;
   AFRAME.registerComponent("light-switch", {
     schema: {},
     init: function(){
@@ -33,21 +34,31 @@
         if (switchOn == true) {
           console.log("test");
           fbRef.set({
-            switchOn: false
+            switchOn: false,
+            darkness: 0.9
           });
-          darkPlane.setAttribute("material", "opacity", "0.9");
+          darkPlane.setAttribute("material", "opacity", darkness);
           offSound.emit("switch-turned-off");
           console.log(switchOn);
         } else if (switchOn == false) {
           console.log("test2");
           fbRef.set({
-            switchOn: true
+            switchOn: true,
+            darkness: 0
           });
-          darkPlane.setAttribute("material", "opacity", "0");
+          darkPlane.setAttribute("material", "opacity", darkness);
           onSound.emit("switch-turned-on");
         }
         });
     },
+    tick: function(){
+      var fbRef = firebase.database().ref();
+      var darkPlane = document.getElementById("dark");
+      fbRef.child("darkness").on("value", function(snap) {
+      darkness = snap.val();
+      darkPlane.setAttribute("material", "opacity", darkness);
+      });
+    }
 });
 </script>
 </head>
