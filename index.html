@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html><head>
+<script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+<script src="https://sdk.altvr.com/libs/altspace.js/2.9.0/altspace.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/5.1.0/firebase.js"></script>
+<script>
+  // Initialize Firebase
+  var config = {
+    apiKey: "AIzaSyBLgpzBCUGvEj_Mp04itbrTyvYFC8EtFUg",
+    authDomain: "tarotapp-f5b54.firebaseapp.com",
+    databaseURL: "https://tarotapp-f5b54.firebaseio.com",
+    projectId: "tarotapp-f5b54",
+    storageBucket: "tarotapp-f5b54.appspot.com",
+    messagingSenderId: "26210660102"
+  };
+  firebase.initializeApp(config);
+</script>
+<script>
+  AFRAME.registerComponent("light-switch", {
+    schema: {},
+    init: function(){
+      var el = this.el;
+      var darkPlane = document.getElementById("dark");
+      var onSound = document.getElementById("on-sound");
+      var offSound = document.getElementById("off-sound");
+      var fbRef = firebase.database().ref();
+      var switchOn;
+      this.el.addEventListener("click", function(){
+        fbRef.child("switchOn").on("value", function(snap) {
+        switchOn = snap.val();
+        console.log(switchOn);
+        });
+        if (switchOn == true) {
+          console.log("test");
+          fbRef.set({
+            switchOn: false
+          });
+          darkPlane.setAttribute("material", "opacity", "0.9");
+          offSound.emit("switch-turned-off");
+          console.log(switchOn);
+        } else if (switchOn == false) {
+          console.log("test2");
+          fbRef.set({
+            switchOn: true
+          });
+          darkPlane.setAttribute("material", "opacity", "0");
+          onSound.emit("switch-turned-on");
+        }
+        });
+    },
+});
+</script>
+</head>
+<body>
+<!-- Animations that will be attached to elements with the class "item" -->
+<!-- Set up the scene -->
+<a-scene altspace="fullspace: true">
+
+    <a-assets>
+    </a-assets>
+    <!-- The Red Box -->
+    <a-box light-switch color="red" position="0 1 0"></a-box>
+    <a-entity id="on-sound" position="0 1 0" sound="src: url(switch-on.mp3); on: switch-turned-on"></a-entity>
+    <a-entity id="off-sound" position="0 1 0" sound="src: url(switch-off.mp3); on: switch-turned-off"></a-entity>
+    <a-plane id="dark" n-skeleton-parent="part: head;" position="0 0 -0.2" scale="0.35 0.5" material="color: black; transparent: true; opacity: 0; side:front">
+      <a-animation id="tint"
+               attribute="material.opacity"
+               dur="500"
+               easing="linear"
+               to="0.9"
+               direction="alternate"
+               begin="lights-off"
+               repeat="indefinite"></a-animation>
+    </a-plane>
+    <!-- Items -->
+    <!-- Spawn Points -->
+</a-scene>
+
+</body></html>  
