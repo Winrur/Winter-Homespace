@@ -16,7 +16,9 @@
   firebase.initializeApp(config);
 </script>
 <script>
+  var switchOn;
   var darkness;
+  var power = 100;
   AFRAME.registerComponent("light-switch", {
     schema: {},
     init: function(){
@@ -24,8 +26,9 @@
       var darkPlane = document.getElementById("dark");
       var onSound = document.getElementById("on-sound");
       var offSound = document.getElementById("off-sound");
+      var spooky = document.getElementById("spooky");
+      spooky.setAttribute("visible", false);
       var fbRef = firebase.database().ref();
-      var switchOn;
       this.el.addEventListener("click", function(){
         fbRef.child("switchOn").on("value", function(snap) {
         switchOn = snap.val();
@@ -33,19 +36,21 @@
         });
         if (switchOn == true) {
           console.log("test");
-          fbRef.set({
+          fbRef.update({
             switchOn: false,
-            darkness: 0.9
+            darkness: 0.99
           });
+          spooky.setAttribute("visible", true);
           darkPlane.setAttribute("material", "opacity", darkness);
           offSound.emit("switch-turned-off");
           console.log(switchOn);
         } else if (switchOn == false) {
           console.log("test2");
-          fbRef.set({
+          fbRef.update({
             switchOn: true,
             darkness: 0
           });
+          spooky.setAttribute("visible", false);
           darkPlane.setAttribute("material", "opacity", darkness);
           onSound.emit("switch-turned-on");
         }
@@ -53,11 +58,26 @@
     },
     tick: function(){
       var fbRef = firebase.database().ref();
+      var powerVal = {};
+      var powerText = document.getElementById("power-text");
       var darkPlane = document.getElementById("dark");
       fbRef.child("darkness").on("value", function(snap) {
       darkness = snap.val();
       darkPlane.setAttribute("material", "opacity", darkness);
       });
+      fbRef.child("0").on("value", function(snap) {
+      power = snap.val();
+      powerText.setAttribute("n-text", "text", "Power: " + power);
+      });
+      powerVal = [power];
+      fbRef.update(powerVal);
+      function reducePower() {
+        if(switchOn == true) {
+          power--;
+          console.log(power);
+        }
+      }
+      setInterval(reducePower, 3000);
     }
 });
 </script>
@@ -70,7 +90,9 @@
     <a-assets>
     </a-assets>
     <!-- The Red Box -->
-    <a-box light-switch src="light-switch-texture.jpg" position="12.7 1.8 -13.38" rotation="0 180 0" scale="0.15 0.2 0.04"></a-box>
+    <a-box light-switch src="light-switch-texture.jpg" position="2 1.8 -13.38" rotation="0 180 0" scale="0.15 0.2 0.04"></a-box>
+    <a-plane id="spooky" material="transparent: true" src="scary-avatar-2.png" scale="0.8 2.3" position="13.7 1.3 -11" rotation="0 180"></a-plane>
+    <a-entity id="power-text" n-text="text: Power:" n-skeleton-parent="part: head;" scale="0.005 0.005 0.005" position="-0.07 0 -0.15"></a-entity>
     <a-entity id="on-sound" position="0 1 0" sound="src: url(switch-on.mp3); on: switch-turned-on; volume: 2"></a-entity>
     <a-entity id="off-sound" position="0 1 0" sound="src: url(switch-off.mp3); on: switch-turned-off; volume: 2"></a-entity>
     <a-plane id="dark" n-skeleton-parent="part: head;" position="0 0 -0.2" scale="0.35 0.5" material="color: black; transparent: true; opacity: 0; side:front">
