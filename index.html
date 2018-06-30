@@ -23,17 +23,32 @@
 					var paused;
 					var onSoundClick, offSoundClick;
 					var powerDownInterval;
+					var randomNum = 10
       				var darkPlane = document.getElementById("dark");
       				var onSound = document.getElementById("on-sound");
       				var offSound = document.getElementById("off-sound");
       				var powerText = document.getElementById("power");
       				var spooky = document.getElementById("spooky");
+      				var spookyRobot = document.getElementById("spooky-robot");
+      				var robotText = document.getElementById("robot");
+      				var robotCounterRef = document.getElementById("robot-counter");
+      				var robotCounterText = "The Ghost Robot is watching...";
+      				var robotCounter = 30;
+      				var robotCounterVisible = false;
       				var darkness = 0;
       				var darkRef = db.collection("dark-plane").doc("darkness");
       				var darkRefData;
+      				var robotRefData;
+      				var spawnPoints = document.getElementsByClassName("spawn");
+      				var randomSpawnPoint = spawnPoints[Math.floor(Math.random() * spawnPoints.length)].getAttribute("position");
+      				randomSpawnPoint =`${randomSpawnPoint.x}` + " " + `${randomSpawnPoint.y}` + " " + `${randomSpawnPoint.z}`;
       				darkRef.set({
       					opacity: darkness,
-      					power: power
+      					power: power,
+      					robotcounter: robotCounter,
+      					robotcountervisible: robotCounterVisible ,
+      					robotcountertext: robotCounterText,
+      					randomspawnpoint: randomSpawnPoint
       				})
       				.then(function(){
       					console.log("Darkness set successfully!");
@@ -62,7 +77,7 @@
     				this.resume();
 					}
 
-      				var timer = new RecurringTimer(function(){
+      				var powerTimer = new RecurringTimer(function(){
       					if (power > 0) {
       					power--;
       					}
@@ -70,6 +85,44 @@
       							power: power
       					});
       					console.log(power);}, 3000);
+      				var robotTimer = new RecurringTimer(function(){
+      					console.log(randomNum);
+      					if (randomNum > 0){
+      						randomNum--;
+      					}
+      					darkRef.get().then(function(doc){
+      						robotRefData = doc.data();
+      					});
+      					if(randomNum > 50){
+      						darkRef.update({
+      							robotcountertext: "The Ghost Robot is watching...",
+      							robotcountervisible: false
+      						})
+      						robotText.setAttribute("n-text", "text", robotRefData.robotcountertext);
+      						robotCounterRef.setAttribute("visible", robotRefData.robotcountervisible);
+
+      					} else if(randomNum < 50) {
+      						 darkRef.update({
+      							robotcountertext: "The Ghost Robot is hiding...",
+      							robotcountervisible: false
+      						})
+      						robotText.setAttribute("n-text", "text", robotRefData.robotcountertext);
+      						robotCounterRef.setAttribute("visible", robotRefData.robotcountervisible);
+      					} 
+      					if (randomNum == 0) {
+      						darkRef.update({
+      							robotcountertext: "The Ghost Robot wants to play...",
+      							robotcountervisible: true,
+      							robotcounter: robotCounter--
+      						})
+      						//randomNum = Math.floor(Math.random() * 100 + 20);
+      						robotText.setAttribute("n-text", "text", robotRefData.robotcountertext);
+      						robotCounterRef.setAttribute("n-text", "text", robotRefData.robotcounter);
+      					}
+      					//if(darkRefData.robotcountervisible == true){
+      					//	darkRefData.
+      					//}
+      				}, 1000);
       				realtimeUpdate = function(){
       							darkRef.onSnapshot(function(doc){
       							darkRefData = doc.data();
@@ -84,15 +137,18 @@
       							}
       							if (darkRefData.opacity == 0) {
       								spooky.setAttribute("visible", false);
+      								spookyRobot.setAttribute("visible", false);
       								if (paused == true) {
-      										timer.resume();
       										offSound.emit("switch-turned-off");
+      										powerTimer.resume();
       								}
       							} else if (darkRefData.opacity == 0.93) {
-      								onSound.emit("switch-turned-on");
+      								if (paused == false){
+      									onSound.emit("switch-turned-on");
+      								}
       								spooky.setAttribute("visible", true);
-      								clearInterval(powerDownInterval);
-      								timer.pause();
+      								spookyRobot.setAttribute("visible", true);
+      								powerTimer.pause();
       							}	
       							});
       				}
@@ -122,10 +178,30 @@
 		<a-scene altspace="fullspace: true" sync-system="author: winrar; app: homespacetest">
 			<a-plane id="dark" n-skeleton-parent="part: head;" position="0 0 -0.2" scale="0.54 0.5" material="color: black; transparent: true; opacity: 0; side:front">	
 			<a-plane id="spooky" material="transparent: true" src="scary-avatar-3.png" scale="1.5 4.4" position="1.5 2 2" n-billboard></a-plane>
+			<a-plane id="spooky-robot" material="transparent: true" src="scary-avatar-4.png" scale="2 2" position="1.5 -2 2" n-billboard></a-plane>
 			<a-box id="light-switch" src="light-switch-texture.jpg" lights scale="0.4 0.9 0.1" position="0 3 2.51"></a-box>
 			<a-entity id="power" n-text="text: Power: 100" position="0 3.8 2.47" scale="0.2 0.2" rotation="0 180"></a-entity>
+			<a-entity id="robot" n-text="text: The Ghost Robot is watching..." position="13.9 2.7 1.66" scale="0.05 0.1" rotation="0 241.4"></a-entity>
+			<a-entity id="robot-counter" n-text="text: 30" position="13.9 3 1.66" scale="0.05 0.1" rotation="0 241.4"></a-entity>
 			<a-entity id="on-sound" position="0 1 0" sound="src: url(switch-on.mp3); on: switch-turned-on; volume: 2"></a-entity>
     		<a-entity id="off-sound" position="0 1 0" sound="src: url(switch-off.mp3); on: switch-turned-off; volume: 2"></a-entity>
+    		<!-- Spawn Points -->
+    		<!-- Kitchen Sink -->
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="-15 1.9 -4.3"></a-box>
+    		<!-- Workbench -->
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="-15 2.9 -23.25"></a-box>
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="-5 1.2 -23.9"></a-box>
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="10 1.2 -23.9"></a-box>
+    		<!-- Open Plant Area -->
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="-12 1.2 -11.2"></a-entity>
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="-12 1.2 -8.8"></a-entity>
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="-2 1.2 -8.9"></a-entity>
+    		<!-- Outside -->
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="-20 1.2 -30"></a-entity>
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="-20 1.1 22"></a-entity>
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="19 1.1 22"></a-entity>
+    		<!-- Dark Hallway -->
+    		<a-entity class="spawn" scale="0.2 0.2 0.2" position="14 1.2 -7.4"></a-entity>
 		</a-scene>
 	</body>
 </html>
