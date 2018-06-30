@@ -63,7 +63,9 @@
 					}
 
       				var timer = new RecurringTimer(function(){
+      					if (power > 0) {
       					power--;
+      					}
       					darkRef.update({
       							power: power
       					});
@@ -74,6 +76,12 @@
       							darkPlane.setAttribute("material", "opacity", darkRefData.opacity);
       							powerText.setAttribute("n-text", "text", "Power: " + darkRefData.power);
       							console.log("Darkness: " + darkRefData.opacity);
+      							if (darkRefData.power == 0) {
+      								darkRef.update({
+      									opacity: 0.93
+      								});
+      								darkness = 0.93;
+      							}
       							if (darkRefData.opacity == 0) {
       								spooky.setAttribute("visible", false);
       								if (paused == true) {
@@ -89,12 +97,12 @@
       							});
       				}
       				this.el.addEventListener("click", function(){
-      					if (darkness == 0) {
+      					if (darkness == 0 && power != 0) {
       						darkness = 0.93;
       						return darkRef.update({
       							opacity: darkness
       						});
-      					} else if (darkness == 0.93){
+      					} else if (darkness == 0.93 && power != 0){
       						darkness = 0;
       						return darkRef.update({
       							opacity: darkness
