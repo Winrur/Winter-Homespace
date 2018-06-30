@@ -19,15 +19,21 @@
 				schema: {},
 				init: function() {
 					var el = this.el;
+					var power = 100;
+					var paused;
+					var onSoundClick, offSoundClick;
+					var powerDownInterval;
       				var darkPlane = document.getElementById("dark");
       				var onSound = document.getElementById("on-sound");
       				var offSound = document.getElementById("off-sound");
+      				var powerText = document.getElementById("power");
       				var spooky = document.getElementById("spooky");
       				var darkness = 0;
       				var darkRef = db.collection("dark-plane").doc("darkness");
       				var darkRefData;
       				darkRef.set({
-      					opacity: darkness
+      					opacity: darkness,
+      					power: power
       				})
       				.then(function(){
       					console.log("Darkness set successfully!");
@@ -35,18 +41,51 @@
       				.catch(function(error){
       					console.log("Error: " + error);
       				})
+      				function RecurringTimer(callback, delay) {
+    					var timerId, start, remaining = delay;
+    					paused = false;
+    							this.pause = function() {
+       							window.clearTimeout(timerId);
+        						remaining -= new Date() - start;
+        						paused = true;
+    					};
+    					var resume = function() {
+    						    paused = false;
+        						start = new Date();
+        						timerId = window.setTimeout(function() {
+            						remaining = delay;
+            						resume();
+            						callback();
+        							}, remaining);
+    							};
+    				this.resume = resume;
+    				this.resume();
+					}
+
+      				var timer = new RecurringTimer(function(){
+      					power--;
+      					darkRef.update({
+      							power: power
+      					});
+      					console.log(power);}, 3000);
       				realtimeUpdate = function(){
       							darkRef.onSnapshot(function(doc){
       							darkRefData = doc.data();
       							darkPlane.setAttribute("material", "opacity", darkRefData.opacity);
+      							powerText.setAttribute("n-text", "text", "Power: " + darkRefData.power);
       							console.log("Darkness: " + darkRefData.opacity);
       							if (darkRefData.opacity == 0) {
-      								offSound.emit("switch-turned-off");
       								spooky.setAttribute("visible", false);
+      								if (paused == true) {
+      										timer.resume();
+      										offSound.emit("switch-turned-off");
+      								}
       							} else if (darkRefData.opacity == 0.93) {
       								onSound.emit("switch-turned-on");
       								spooky.setAttribute("visible", true);
-      							}
+      								clearInterval(powerDownInterval);
+      								timer.pause();
+      							}	
       							});
       				}
       				this.el.addEventListener("click", function(){
@@ -73,9 +112,10 @@
 	</head>
 	<body>
 		<a-scene altspace="fullspace: true" sync-system="author: winrar; app: homespacetest">
-			<a-plane id="dark" n-skeleton-parent="part: head;" position="0 0 -0.2" scale="0.54 0.5" material="color: black; transparent: true; opacity: 0; side:front">
+			<a-plane id="dark" n-skeleton-parent="part: head;" position="0 0 -0.2" scale="0.54 0.5" material="color: black; transparent: true; opacity: 0; side:front">	
 			<a-plane id="spooky" material="transparent: true" src="scary-avatar-3.png" scale="1.5 4.4" position="1.5 2 2" n-billboard></a-plane>
 			<a-box id="light-switch" src="light-switch-texture.jpg" lights scale="0.4 0.9 0.1" position="0 3 2.51"></a-box>
+			<a-entity id="power" n-text="text: Power: 100" position="0 3.8 2.47" scale="0.2 0.2" rotation="0 180"></a-entity>
 			<a-entity id="on-sound" position="0 1 0" sound="src: url(switch-on.mp3); on: switch-turned-on; volume: 2"></a-entity>
     		<a-entity id="off-sound" position="0 1 0" sound="src: url(switch-off.mp3); on: switch-turned-off; volume: 2"></a-entity>
 		</a-scene>
